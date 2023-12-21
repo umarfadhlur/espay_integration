@@ -211,6 +211,7 @@ class RsaKeyHelper {
 
     var dataBase64 = base64.encode(topLevel.encodedBytes);
 
+    // return dataBase64;
     return """-----BEGIN PRIVATE KEY-----\r\n$dataBase64\r\n-----END PRIVATE KEY-----""";
   }
 
@@ -224,6 +225,7 @@ class RsaKeyHelper {
     topLevel.add(ASN1Integer(publicKey.exponent));
 
     var dataBase64 = base64.encode(topLevel.encodedBytes);
+    // return dataBase64;
     return """-----BEGIN PUBLIC KEY-----\r\n$dataBase64\r\n-----END PUBLIC KEY-----""";
   }
 }

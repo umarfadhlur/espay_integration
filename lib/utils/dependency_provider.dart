@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:espay_integration/espay/rsa_key_helper.dart';
+import 'package:espay_integration/utils/rsa_key_helper.dart';
 
 /// As an [InheritedWidget] this class will provide its childs the objects it hold
 ///

@@ -1,9 +1,11 @@
 import 'dart:convert';
 
+import 'package:espay_integration/utils/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pointycastle/api.dart' as crypto;
-import 'package:espay_integration/espay/dependency_provider.dart';
+import 'package:espay_integration/utils/dependency_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 TextStyle get whiteTextStyle => TextStyle(color: Colors.white);
 
@@ -16,8 +18,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  /// The Future that will show the Pem String
   Future<String> futureText;
+  String _publicKey, _privateKey;
 
   /// Future to hold the reference to the KeyPair generated with PointyCastle
   /// in order to extract the [crypto.PrivateKey] and [crypto.PublicKey]
@@ -39,15 +41,7 @@ class _MyHomePageState extends State<MyHomePage> {
   /// copy of the Key
   final key = new GlobalKey<ScaffoldState>();
 
-  /// Text Editing Controller to retrieve the text to sign
   TextEditingController _controller = TextEditingController();
-
-  String minifyJson(String jsonString) {
-    var jsonObject = json.decode(jsonString);
-    var minifiedJson = json.encode(jsonObject);
-
-    return minifiedJson;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +100,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                           .getRsaKeyHelper()
                                           .encodePrivateKeyToPemPKCS1(
                                               keyPair.privateKey));
+                                  _privateKey = DependencyProvider.of(context)
+                                      .getRsaKeyHelper()
+                                      .encodePrivateKeyToPemPKCS1(
+                                          keyPair.privateKey);
+                                  print(_privateKey);
                                 });
                               },
                             ),
@@ -122,6 +121,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                           .getRsaKeyHelper()
                                           .encodePublicKeyToPemPKCS1(
                                               keyPair.publicKey));
+                                  _publicKey = DependencyProvider.of(context)
+                                      .getRsaKeyHelper()
+                                      .encodePublicKeyToPemPKCS1(
+                                          keyPair.publicKey);
+                                  print(keyPair.publicKey);
                                 });
                               },
                             ),
