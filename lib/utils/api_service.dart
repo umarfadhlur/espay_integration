@@ -1,22 +1,39 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:espay_integration/utils/generate_random_string.dart';
 import 'package:espay_integration/utils/rsa_key_helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:pointycastle/asymmetric/api.dart' as crypto;
+import 'package:pointycastle/digests/sha256.dart';
+import 'package:pointycastle/pointycastle.dart';
+import 'package:pointycastle/signers/rsa_signer.dart';
 
-final rsaKeyHelper = RsaKeyHelper();
+String jsonString = '''
+  {
+    "partnerReferenceNo": "SGWROYALABADI0281",
+    "merchantId": "SGWROYALABADISEJ",
+    "amount": {
+      "value": "10001.00",
+      "currency": "IDR"
+    },
+    "additionalInfo": {
+      "productCode": "QRIS"
+    }
+  }
+  ''';
 
-class ApiService {
-  crypto.RSAPublicKey publicKey;
-  crypto.RSAPrivateKey privateKey;
-  encrypt.Encrypter encrypter;
-  String plainText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit';
-  encrypt.Encrypted encryptedText;
-  String decryptedText, encryptedString;
+Map<String, dynamic> jsonNew = {
+  "partnerReferenceNo": "SGWROYALABADI0281",
+  "merchantId": "SGWROYALABADISEJ",
+  "amount": {"value": "10001.00", "currency": "IDR"},
+  "additionalInfo": {"productCode": "QRIS"}
+};
 
-  final privateKeyFile = '''-----BEGIN RSA PRIVATE KEY-----
+Map<String, dynamic> jsonMap = json.decode(jsonString);
+
+final privateKeyFile = '''-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEA2O9xDMTBiZ5oOy3LBVn6TerxWMHEwxl6gr0SX1dRt4be5vq2
 voFMoCHokeowqpeU5ZQi0EM36W7Q1K8hH6KRjdNqhdIHyMh7X0yhVJTQ3Fz9QcjB
 feMwoovmIYHP+U08GKz7j99VojSSriYvzT1mPdwvTuAdFT3QEXfgdMLKQCjtXF/e
@@ -43,7 +60,7 @@ AThS8QKBgQCCyPFJzwGIP99PcakQ38oFcoU8u/ahb0ghgJfSgK+K/ChXSyfbq5zt
 jRkj6UWLa3plYX3po9h0Yp6f2IxnbOa3VK6fPkcSvBxhgK3RrugPerUJzFEPd3k4
 GTqOBXtXO6N7zEMYxZxv0SgrV24LPfPz0aPObDeH6F0kuzXjanopIw==
 -----END RSA PRIVATE KEY-----''';
-  final publicKeyFile = '''-----BEGIN PUBLIC KEY-----
+final publicKeyFile = '''-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2O9xDMTBiZ5oOy3LBVn6
 TerxWMHEwxl6gr0SX1dRt4be5vq2voFMoCHokeowqpeU5ZQi0EM36W7Q1K8hH6KR
 jdNqhdIHyMh7X0yhVJTQ3Fz9QcjBfeMwoovmIYHP+U08GKz7j99VojSSriYvzT1m
@@ -53,6 +70,15 @@ EKX2ETqIk8S1H7Pou7tSo73O0fFGaSBhG610bKIb9lLTXCQYJKk8bygPaL3aoT+5
 QwIDAQAB
 -----END PUBLIC KEY-----''';
 
+crypto.RSAPublicKey publicKey = encrypt.RSAKeyParser().parse(publicKeyFile);
+crypto.RSAPrivateKey privateKey = encrypt.RSAKeyParser().parse(privateKeyFile);
+encrypt.Encrypter encrypter;
+encrypt.Encrypted encryptedText;
+String decryptedText, encryptedString;
+
+final rsaKeyHelper = RsaKeyHelper();
+
+class ApiService {
   static const baseUrl = "https://sandbox-api.espay.id";
   static const pathQR = "/api/v1.0/qr/qr-mpm-generate";
   static const httpMethod = "POST";
@@ -60,7 +86,7 @@ QwIDAQAB
   static Future<Map<String, dynamic>> makeApiRequest(
       String path, Map<String, dynamic> requestBody) async {
     final timestamp = DateTime.now().toUtc().toIso8601String();
-    final url = Uri.parse('$baseUrl/$path');
+    final url = Uri.parse('$baseUrl$path');
 
     var jsonObject = json.decode(requestBody.toString());
     var minifiedJson = json.encode(jsonObject);
@@ -82,15 +108,23 @@ QwIDAQAB
     //+Lowercase(HexEncode(SHA-256(MinifyJson(RequestBody))))
     //+":"+Timestamp
 
-    String generateSignature() {
-      // rsaKeyHelper.sign(stringToSign, '');
-      return 'your-generated-signature';
+    Uint8List createUint8ListFromString(String s) {
+      var codec = Utf8Codec(allowMalformed: true);
+      return Uint8List.fromList(codec.encode(s));
+    }
+
+    String generateSignature(
+        String plainText, crypto.RSAPrivateKey privateKey) {
+      var signer = RSASigner(SHA256Digest(), '0609608648016503040201');
+      signer.init(true, PrivateKeyParameter<crypto.RSAPrivateKey>(privateKey));
+      return base64Encode(
+          signer.generateSignature(createUint8ListFromString(plainText)).bytes);
     }
 
     Map<String, String> headers = {
       'Content-Type': 'application/json',
       'X-TIMESTAMP': timestamp,
-      'X-SIGNATURE': generateSignature(),
+      'X-SIGNATURE': generateSignature(stringToSign, privateKey),
       'X-EXTERNAL-ID': generateRandomNumericString(),
       'X-PARTNER-ID': 'SGWROYALABADISEJ',
       'CHANNEL-ID': 'ESPAY',

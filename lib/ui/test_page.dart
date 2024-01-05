@@ -113,7 +113,6 @@ QwIDAQAB
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Encrypted Text: $encryptedText'),
-            Text('Decrypted Text: $decryptedText'),
             Text('Signature Verified: $benarTidak'),
           ],
         ),

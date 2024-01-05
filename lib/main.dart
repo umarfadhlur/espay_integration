@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:encrypt/encrypt.dart';
+import 'package:espay_integration/ui/api_access_page.dart';
 import 'package:espay_integration/ui/images_page.dart';
 import 'package:espay_integration/ui/test_page.dart';
 import 'package:espay_integration/utils/dependency_provider.dart';
@@ -26,7 +27,8 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       // home: ImagesPage(),
-      home: TestPage(title: 'RSA Key Generator'),
+      home: ApiAccessPage(),
+      // home: TestPage(title: 'RSA Key Generator'),
       // home: MyHomePage(title: 'RSA Key Generator'),
     );
   }
