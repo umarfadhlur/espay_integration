@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:espay_integration/utils/generate_random_string.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class ApiAccessPage extends StatefulWidget {
   @override
@@ -13,7 +14,9 @@ class ApiAccessPage extends StatefulWidget {
 
 class _ApiAccessPageState extends State<ApiAccessPage> {
   Map<String, dynamic> responseData;
+  Map<String, dynamic> responseDatabase;
   String errorMessage = "";
+  final value = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -25,20 +28,27 @@ class _ApiAccessPageState extends State<ApiAccessPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            TextFormField(
+              controller: value,
+            ),
             ElevatedButton(
               onPressed: _makeApiRequest,
               child: Text('Access API'),
             ),
-            // ... (Add widgets to display response or error)
             Container(
               width: double.infinity,
               height: 200,
               child: Center(
-                child:
-                    Text(responseData != null ? responseData.toString() : ""),
+                child: responseData != null
+                    ? QrImage(
+                        data: responseData['qrContent'],
+                        version: QrVersions.auto,
+                        size: 200,
+                      )
+                    : Text(""),
               ),
             ),
-            Text(errorMessage),
+            // Text(errorMessage),
           ],
         ),
       ),
@@ -46,15 +56,16 @@ class _ApiAccessPageState extends State<ApiAccessPage> {
   }
 
   void _makeApiRequest() async {
+    final String randomNumericString = generateRandomNumericString();
     setState(() {
       errorMessage = ""; // Clear any previous error message
     });
     try {
       final timestamp = DateTime.now().toUtc().toIso8601String();
       Map<String, dynamic> requestBody = {
-        "partnerReferenceNo": generateRandomNumericString(),
+        "partnerReferenceNo": randomNumericString,
         "merchantId": "SGWROYALABADISEJ",
-        "amount": {"value": "10001.00", "currency": "IDR"},
+        "amount": {"value": value.text, "currency": "IDR"},
         "additionalInfo": {"productCode": "QRIS"}
       };
       print(jsonEncode(requestBody));
@@ -70,11 +81,19 @@ class _ApiAccessPageState extends State<ApiAccessPage> {
         'Content-Type': 'application/json',
         'X-TIMESTAMP': timestamp,
         'X-SIGNATURE': signature,
-        'X-EXTERNAL-ID':
-            generateRandomNumericString(), // Assuming you have this function
+        'X-EXTERNAL-ID': randomNumericString, // Assuming you have this function
         'X-PARTNER-ID': 'SGWROYALABADISEJ',
         'CHANNEL-ID': 'ESPAY',
       };
+
+      print(headers);
+
+      final pushDatabase = await http.post(
+        Uri.parse(
+            'https://espayapi.000webhostapp.com/api/postData.php'), // Adjust URL if needed
+        headers: headers,
+        body: jsonEncode(requestBody),
+      );
 
       final response = await http.post(
         Uri.parse(
@@ -83,10 +102,13 @@ class _ApiAccessPageState extends State<ApiAccessPage> {
         body: jsonEncode(requestBody),
       );
 
+      responseDatabase = jsonDecode(pushDatabase.body);
       responseData = jsonDecode(response.body);
       // Handle successful response (e.g., display data)
       setState(() {
         errorMessage = "";
+        print(responseDatabase);
+        print('pembatas');
         print(responseData);
       });
     } catch (error) {
