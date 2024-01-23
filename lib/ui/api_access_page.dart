@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:espay_integration/ui/list_order.dart';
 import 'package:espay_integration/utils/rsa_key.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -14,6 +15,7 @@ class ApiAccessPage extends StatefulWidget {
 
 class _ApiAccessPageState extends State<ApiAccessPage> {
   Map<String, dynamic> responseData;
+  Map<String, dynamic> responsePut;
   Map<String, dynamic> responseDatabase;
   String errorMessage = "";
   final value = TextEditingController();
@@ -23,6 +25,19 @@ class _ApiAccessPageState extends State<ApiAccessPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('API Access Page'),
+        actions: [
+          FlatButton(
+            textColor: Colors.white,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ListOrderPage()),
+              );
+            },
+            child: Text("List Order"),
+            shape: CircleBorder(side: BorderSide(color: Colors.transparent)),
+          ),
+        ],
       ),
       body: Center(
         child: Column(
@@ -104,12 +119,39 @@ class _ApiAccessPageState extends State<ApiAccessPage> {
 
       responseDatabase = jsonDecode(pushDatabase.body);
       responseData = jsonDecode(response.body);
+
+      String getTrxIdFromUrl(String url) {
+        Uri uri = Uri.parse(url);
+        String trxId = uri.queryParameters['trx_id'] ?? '';
+        return trxId;
+      }
+
+      // Mendapatkan nilai trx_id dari qrUrl
+      String qrUrl = responseData['qrUrl'];
+      String trxId = getTrxIdFromUrl(qrUrl);
+
+      print('Nilai trx_id dari qrUrl: $trxId');
+
       // Handle successful response (e.g., display data)
-      setState(() {
+      setState(() async {
         errorMessage = "";
+        Map<String, dynamic> requestPutBody = {
+          "partnerReferenceNo": randomNumericString,
+          "amountValue": value.text,
+          "trxId": trxId,
+        };
         print(responseDatabase);
         print('pembatas');
         print(responseData);
+
+        final putDatabase = await http.post(
+          Uri.parse(
+              'https://espayapi.000webhostapp.com/api/putData.php'), // Adjust URL if needed
+          headers: headers,
+          body: jsonEncode(requestPutBody),
+        );
+        print('pembatas');
+        print(jsonDecode(putDatabase.body));
       });
     } catch (error) {
       setState(() {

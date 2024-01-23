@@ -22,7 +22,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'RSA Generator',
+      debugShowCheckedModeBanner: false,
+      title: 'Espay Integration',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
